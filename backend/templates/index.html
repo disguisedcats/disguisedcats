@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create PWA</title>
+    <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    <script
+      src="https://unpkg.com/htmx.org@1.9.11"
+      integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .btn,
+        .file-upload::file-selector-button {
+          @apply rounded-md font-normal bg-gray-300/75 border-none px-3 py-2;
+        }
+        .btn-primary {
+          @apply bg-sky-500/75 text-slate-50;
+        }
+        .btn:hover,
+        .file-upload::file-selector-button:hover {
+          @apply cursor-pointer bg-gray-300;
+        }
+        .btn-primary:hover {
+          @apply bg-sky-500 text-white;
+        }
+        .btn:focus-visible,
+        .file-upload:focus-visible {
+          @apply shadow-sm border-sky-300 ring ring-sky-200 ring-opacity-50;
+          outline: none;
+        }
+        .file-upload:focus-visible > ::file-selector-button {
+          @apply cursor-pointer bg-gray-300;
+        }
+      }
+    </style>
+  </head>
+  <body class="font-sans h-full">
+    <div class="container mx-auto p-4 grid sm:grid-cols-2 md:grid-cols-3 grid-cols-1">
+      <div class="max-w-sm min-w-64">
+        <h2 class="text-2xl font-semibold mb-4">Create PWA</h2>
+        <form
+          hx-post="/create"
+          hx-swap="outerHTML"
+          hx-target="#generated-url"
+          id="task-form"
+          class="flex flex-col gap-4"
+          hx-encoding="multipart/form-data"
+        >
+          <label for="name" class="flex flex-col gap-1"
+            ><span class="text-gray-700">App name:</span>
+            <input
+              type="text"
+              required
+              spellcheck="false"
+              autocomplete="off"
+              minlength="1"
+              id="name"
+              name="name"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50"
+              placeholder="Name..."
+              _="on change get the (value of me) send nameUpdate(name:it) to #name-preview"
+            />
+          </label>
+          <label for="icon" class="flex flex-col gap-1"
+            ><span class="text-gray-700">App icon:</span>
+            <input
+              type="file"
+              required
+              name="icon"
+              id="icon"
+              accept="image/png,image/jpeg"
+              class="file-upload cursor-pointer"
+              _="
+            on change 
+              js(me) 
+                return URL.createObjectURL(me.files[0])
+              end 
+              then 
+                send fileUpdate(image:it) to #icon-preview
+            "
+            />
+          </label>
+          <label class="flex flex-col gap-1" for="select-preset">
+            <span class="text-gray-700">Preset:</span>
+            <select name="preset" id="select-preset" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+              <option value="cats">cats</option>
+              <option value="dogs">dogs</option>
+              <option value="unicorns">unicorns</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            hx-disabled-elt="this"
+            class="btn btn-primary focus:none focus-visible:none"
+          >
+            Create
+          </button>
+        </form>
+      </div>
+      <div class="max-w-sm min-w-64">
+        <h2 class="text-2xl font-semibold mb-4">Preview</h2>
+        <div class="flex flex-col w-full items-center">
+        <div class="border-gray-300 w-24 h-24 rounded-xl border-solid border overflow-hidden">
+          <img
+            src=""
+            id="icon-preview"
+            _="on fileUpdate(image) put image into @src"
+            class="overflow-hidden object-cover object-center"
+          />
+        </div>
+          <span id="name-preview" class="font-normal text-sm"
+          _="on nameUpdate(name) set my innerHTML to `${name}`"></span>
+      </div>
+      </div>
+      <div class="max-w-sm min-w-64">
+        <a id="generated-url" class="mt-4"></a>
+      </div>
+    </div>
+  </body>
+</html>

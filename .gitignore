@@ -1,0 +1,13 @@
+__pycache__
+*.pyc
+build
+dist
+.coverage
+coverage.xml
+.python-version
+.env
+.venv
+venv
+.idea
+.ruff_cache
+node_modules
