@@ -16,7 +16,12 @@ class Settings(BaseSettings):
 
     STATIC_PATH: Path
 
+    PEERJS_HOST: str = "/"
+    PEERJS_PORT: int = 80
+    PEERJS_PATH: str = "/peer"
+
     LOG_LEVEL: Literal["DEBUG", "INFO"] = "INFO"
+
     DEBUG: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

@@ -17,6 +17,7 @@ pydantic = "^2.6.4"
 pydantic-settings = "^2.2.1"
 nanoid = "^2.0.0"
 python-multipart = "^0.0.9"
+async-lru = "^2.0.4"
 
 
 [tool.poetry.group.dev.dependencies]

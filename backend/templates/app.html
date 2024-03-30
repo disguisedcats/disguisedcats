@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ app_name }}</title>
+    <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    <script
+      src="https://unpkg.com/htmx.org@1.9.11"
+      integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://unpkg.com/htmx.org@1.9.11/dist/ext/json-enc.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .btn {
+          @apply rounded-md font-normal bg-gray-300/75 border-none px-3 py-2;
+        }
+        .btn-rounded-r {
+          @apply rounded-none rounded-r-md font-normal bg-gray-300/75 border-none px-3 py-2;
+        }
+        .btn-primary {
+          @apply bg-sky-500/75 text-slate-50;
+        }
+        .btn:hover {
+          @apply cursor-pointer bg-gray-300;
+        }
+        .btn-primary:hover {
+          @apply bg-sky-500 text-white;
+        }
+        .btn:focus-visible,
+        .file-upload:focus-visible {
+          @apply shadow-sm border-sky-300 ring ring-sky-200 ring-opacity-50;
+          outline: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div
+      id="init-root"
+      class="font-sans h-full container mx-auto p-4 grid sm:grid-cols-2 grid-cols-1"
+    >
+      <div class="max-w-sm min-w-64 flex flex-col">
+        <div>
+          <h2 class="text-2xl font-semibold mb-4">Generate session code</h2>
+          <div id="session-data-root">
+            <button
+              hx-post="/session"
+              hx-ext="json-enc"
+              hx-vals='js:{"peer_id": manager.peer.id}'
+              hx-target="#session-data-root"
+              hx-swap="outerHTML"
+              hx-disabled-elt="this"
+              class="btn btn-primary focus:none focus-visible:none"
+            >
+              Create
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="max-w-sm min-w-64">
+        <h2 class="text-2xl font-semibold mb-4">Or join using existing code</h2>
+        <div class="flex flex-row">
+          <input
+            type="text"
+            required
+            spellcheck="false"
+            autocomplete="off"
+            minlength="6"
+            maxlength="6"
+            class="block w-full rounded-l-md border-gray-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50"
+            id="join-session-id"
+            name="session_id"
+            placeholder="Session code..."
+          />
+          <button
+            id="join-btn"
+            class="focus:none focus-visible:none btn btn-rounded-r"
+          >
+            Join
+          </button>
+        </div>
+        <div id="join-messages" class="flex flex-row mt-4"></div>
+      </div>
+    </div>
+    <script>
+      class KeyManager {
+        constructor() {
+          this.peer = KeyManager.createPeer();
+          // TODO replace with public—private key generation
+          this.pubkey = `pubkey-${self.crypto.randomUUID()}`;
+          this.knownPeers = {};
+          this.knownKeys = {};
+
+          this.peer.on("connection", (conn) => {
+            if (conn.peer in this.knownPeers) {
+              return;
+            }
+            this.configureConnection(conn);
+
+            conn.on("open", () => {
+              this.knownPeers[conn.peer] = conn;
+              conn.send({
+                type: "syn",
+                key: this.pubkey,
+                knownPeers: Object.keys(this.knownPeers),
+              });
+            });
+          });
+        }
+
+        connect(peerId) {
+          if (peerId in this.knownPeers || peerId === this.peer.id) {
+            return;
+          }
+          const connection = this.peer.connect(peerId);
+          this.configureConnection(connection);
+        }
+
+        removePeer(peerId) {
+          delete this.knownPeers[peerId];
+          delete this.knownKeys[peerId];
+        }
+
+        configureConnection(connection) {
+          connection.on("open", () => {
+            this.knownPeers[connection.peer] = connection;
+            const messagesRoot = document.querySelector("#join-messages");
+            const message = document.createElement('span')
+            message.innerHTML = `Connected to ${connection.peer}`;
+            messagesRoot.appendChild(message);
+          });
+          connection.on("close", () => this.removePeer(connection.peer));
+          connection.on("error", () => this.removePeer(connection.peer));
+          connection.on("data", (data) => {
+            if (data.type === "syn") {
+              this.knownKeys[connection.peer] = data.key;
+              this.knownPeers[connection.peer].send({
+                type: "ack",
+                key: this.pubkey,
+              });
+              data.knownPeers.forEach((peerId) => {
+                if (!(peerId in this.knownKeys)) {
+                  this.connect(peerId);
+                }
+              });
+            } else if (data.type === "ack") {
+              this.knownKeys[connection.peer] = data.key;
+            } else if (data.type === "save") {
+              this.save();
+            }
+          });
+        }
+
+        close() {
+          Object.values(this.knownPeers).forEach((peer) => {
+            peer.send({ type: "save" });
+          });
+          this.save();
+        }
+
+        save() {
+          window.localStorage.setItem(
+            "keys",
+            JSON.stringify({
+              id: this.peer.id,
+              knownKeys: this.knownKeys,
+              pubkey: this.pubkey,
+            })
+          );
+          this.peer.destroy();
+        }
+
+        static createPeer() {
+          return new Peer({
+            host: "{{ peerjs_host }}",
+            port: {{ peerjs_port }},
+            path: "{{ peerjs_path }}",
+            // TODO configure SSL in nginx
+            secure: false,
+          });
+        }
+      }
+
+      let manager = null;
+
+      if (window.localStorage.getItem("keys")) {
+        document.querySelector("#init-root").remove();
+        document.querySelector(
+          "#root"
+        ).innerHTML = `react will be here, store: ${window.localStorage.getItem(
+          "keys"
+        )}`;
+      } else {
+        manager = new KeyManager();
+        document
+          .querySelector("#join-btn")
+          .addEventListener("click", async () => {
+            const sessionId = document.querySelector("#join-session-id").value;
+            const response = await fetch(`/session/${sessionId}`);
+            const data = await response.json();
+            manager.connect(data.peer_id);
+          });
+      }
+    </script>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 import shutil
 from typing import Annotated, Literal
+from uuid import UUID
 
 import svcs
 import nanoid
@@ -8,11 +9,13 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import BaseModel
 
 from disguisedcats import db
 from disguisedcats import log
 from disguisedcats.log import logger
 from disguisedcats.settings import settings
+from disguisedcats.sessions import session
 
 
 @svcs.fastapi.lifespan
@@ -33,8 +36,11 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/")
 async def index(request: Request, services: svcs.fastapi.DepContainer) -> Response:
     """Index page of the service."""
-    hostname = request.headers.get('Host', request.base_url.hostname) 
-    if hostname == settings.HOSTNAME:
+    hostname = request.headers.get("Host", request.base_url.hostname)
+    if (
+        hostname == settings.HOSTNAME
+        or hostname == f"{settings.HOSTNAME}:{settings.PORT}"
+    ):
         return templates.TemplateResponse(request=request, name="index.html")
     try:
         # TODO turn on only for debug-mode
@@ -46,8 +52,19 @@ async def index(request: Request, services: svcs.fastapi.DepContainer) -> Respon
     _db = await services.aget(AsyncIOMotorClient)
     result = await _db.apps.find_one({"_id": app_id})
     if result:
-        logger.debug("Invalid hostname: %s", request.base_url.hostname)
-        return JSONResponse(result)
+        return templates.TemplateResponse(
+            request=request,
+            name="app.html",
+            context={
+                "app_name": result["name"],
+                "app_preset": result["preset"],
+                "peerjs_host": settings.PEERJS_HOST,
+                "peerjs_port": settings.PEERJS_PORT,
+                "peerjs_path": settings.PEERJS_PATH,
+            },
+        )
+
+    logger.debug("Invalid hostname: %s", request.base_url.hostname)
     return Response(status_code=400)
 
 
@@ -78,6 +95,39 @@ async def create_app(
     return templates.TemplateResponse(
         request=request, name="partials/new_app_url.html", context={"new_url": new_url}
     )
+
+
+class CreateSessionRequest(BaseModel):
+    peer_id: UUID
+
+
+class CreateSessionResponse(BaseModel):
+    session_id: str
+
+
+@app.post("/session")
+async def create_init_session(request: Request, data: CreateSessionRequest) -> Response:
+    session_id = nanoid.generate("0123456789", 6)
+    if session.get(session_id):
+        session_id = nanoid.generate("0123456789", 6)
+    await session.set(session_id, data.peer_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/new_init_session.html",
+        context={"session_id": session_id},
+    )
+
+
+class GetSessionResponse(BaseModel):
+    peer_id: UUID
+
+
+@app.get("/session/{session_id}")
+async def get_session(session_id: str) -> GetSessionResponse:
+    peer_id = await session.get(session_id)
+    if peer_id is None:
+        return Response(status_code=400)
+    return GetSessionResponse(peer_id=peer_id)
 
 
 @app.get("/health")
