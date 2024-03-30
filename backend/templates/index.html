@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Create PWA</title>
+    <title>Create new app</title>
     <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
     <script
       src="https://unpkg.com/htmx.org@1.9.11"
@@ -39,13 +39,15 @@
     </style>
   </head>
   <body class="font-sans h-full">
-    <div class="container mx-auto p-4 grid sm:grid-cols-2 md:grid-cols-3 grid-cols-1">
+    <div
+      class="container mx-auto p-4 grid sm:grid-cols-2 md:grid-cols-3 grid-cols-1"
+    >
       <div class="max-w-sm min-w-64">
-        <h2 class="text-2xl font-semibold mb-4">Create PWA</h2>
+        <h2 class="text-2xl font-semibold mb-4">Configure app</h2>
         <form
           hx-post="/create"
           hx-swap="outerHTML"
-          hx-target="#generated-url"
+          hx-target="#generated-url-root"
           id="task-form"
           class="flex flex-col gap-4"
           hx-encoding="multipart/form-data"
@@ -86,7 +88,11 @@
           </label>
           <label class="flex flex-col gap-1" for="select-preset">
             <span class="text-gray-700">Preset:</span>
-            <select name="preset" id="select-preset" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50">
+            <select
+              name="preset"
+              id="select-preset"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50"
+            >
               <option value="cats">cats</option>
               <option value="dogs">dogs</option>
               <option value="unicorns">unicorns</option>
@@ -104,20 +110,25 @@
       <div class="max-w-sm min-w-64">
         <h2 class="text-2xl font-semibold mb-4">Preview</h2>
         <div class="flex flex-col w-full items-center">
-        <div class="border-gray-300 w-24 h-24 rounded-xl border-solid border overflow-hidden">
-          <img
-            src=""
-            id="icon-preview"
-            _="on fileUpdate(image) put image into @src"
-            class="overflow-hidden object-cover object-center"
-          />
+          <div
+            class="border-gray-300 w-24 h-24 rounded-xl border-solid border overflow-hidden"
+          >
+            <img
+              src=""
+              id="icon-preview"
+              _="on fileUpdate(image) put image into @src"
+              class="overflow-hidden object-cover object-center"
+            />
+          </div>
+          <span
+            id="name-preview"
+            class="font-normal text-sm"
+            _="on nameUpdate(name) set my innerHTML to `${name}`"
+          ></span>
         </div>
-          <span id="name-preview" class="font-normal text-sm"
-          _="on nameUpdate(name) set my innerHTML to `${name}`"></span>
-      </div>
       </div>
       <div class="max-w-sm min-w-64">
-        <a id="generated-url" class="mt-4"></a>
+        <div id="generated-url-root"></div>
       </div>
     </div>
   </body>
