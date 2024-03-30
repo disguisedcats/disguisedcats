@@ -2,13 +2,11 @@ version: '3'
 services:
   db:
     image: mongo:latest
-    ports:
-      - 27017:27017
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=verysecretadminpass
       - MONGO_INITDB_DATABASE=admin
-    volumes: 
+    volumes:
       - mongodbdata:/data/db
     healthcheck:
       test: echo 'db.stats().ok' | mongo mongo:27017/test
@@ -17,7 +15,7 @@ services:
       timeout: 3s
       retries: 3
   app:
-    build: .
+    build: ./backend
     ports:
       - 8000:8000
     environment:
@@ -25,7 +23,7 @@ services:
       - DB_NAME=disguisedcats
       - DB_USER=disguisedcat
       - DB_PASSWORD=123456
-      - HOSTNAME=example.loc
+      - HOSTNAME=example.localhost
       - PORT=9999
       - STATIC_PATH=/var/static
       - DEBUG=True
@@ -33,9 +31,22 @@ services:
       - appstatic:/var/static
     depends_on:
       - db
-        # condition: service_healthy
     healthcheck:
       test: curl --fail http://localhost:8000/health || exit 1
+      start_period: 5s
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  proxy:
+    image: nginx:stable
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O /dev/null http://localhost/health || exit 1"]
       start_period: 5s
       interval: 10s
       timeout: 3s

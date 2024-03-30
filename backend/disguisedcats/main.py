@@ -33,11 +33,12 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/")
 async def index(request: Request, services: svcs.fastapi.DepContainer) -> Response:
     """Index page of the service."""
-    if request.base_url.hostname == settings.HOSTNAME:
+    hostname = request.headers.get('Host', request.base_url.hostname) 
+    if hostname == settings.HOSTNAME:
         return templates.TemplateResponse(request=request, name="index.html")
     try:
         # TODO turn on only for debug-mode
-        app_id, _, _ = request.base_url.hostname.split(".")
+        app_id, _, _ = hostname.split(".")
     except Exception:
         logger.debug("Invalid hostname: %s", request.base_url.hostname)
         return Response(status_code=400)
@@ -77,17 +78,6 @@ async def create_app(
     return templates.TemplateResponse(
         request=request, name="partials/new_app_url.html", context={"new_url": new_url}
     )
-
-
-@app.get("/app/{app_id}")
-async def get_app(services: svcs.fastapi.DepContainer, app_id: str) -> Response:
-    """Get app data by app_id, for development."""
-    # TODO
-    _db = await services.aget(AsyncIOMotorClient)
-    result = await _db.apps.find_one({"_id": app_id})
-    if result:
-        return JSONResponse(result)
-    return Response(status_code=400)
 
 
 @app.get("/health")

@@ -13,4 +13,4 @@ WORKDIR /app
 COPY . /app/
 RUN poetry install --no-dev
 EXPOSE 8000
-CMD ["uvicorn", "disguisedcats.main:app"]
+CMD ["uvicorn", "disguisedcats.main:app", "--host=0.0.0.0"]

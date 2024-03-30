@@ -1,0 +1,17 @@
+Dockerfile
+docker-compose.yml
+__pycache__
+.pytest_cache
+*.pyc
+build
+dist
+.coverage
+coverage.xml
+.python-version
+.env
+.venv
+venv
+.idea
+.ruff_cache
+node_modules
+static
