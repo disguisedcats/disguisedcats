@@ -108,9 +108,10 @@
       class KeyManager {
         constructor(keyPair) {
           this.peer = KeyManager.createPeer();
+          console.log(keyPair)
           // TODO replace with public—private key generation
-          this.privateKey = keyPair.private;
-          this.publicKey = keyPair.public;
+          this.privateKey = keyPair.privateKey;
+          this.publicKey = keyPair.publicKey;
           this.knownPeers = {};
           this.knownKeys = [];
 
@@ -119,9 +120,10 @@
               return;
             }
             this.configureConnection(conn);
+            var self = this;
 
             conn.on("open", async () => {
-              const publicKeyFormatted = new Uint8Array(await window.crypto.subtle.exportKey("spki", this.publicKey))
+              const publicKeyFormatted = new Uint8Array(await window.crypto.subtle.exportKey("spki", self.publicKey))
               this.knownPeers[conn.peer] = conn;
               conn.send({
                 type: "syn",
@@ -146,6 +148,7 @@
         }
 
         configureConnection(connection) {
+          var self = this;
           connection.on("open", () => {
             this.knownPeers[connection.peer] = connection;
             const messagesRoot = document.querySelector("#join-messages");
@@ -158,7 +161,7 @@
           connection.on("data", async (data) => {
             if (data.type === "syn") {
               this.knownKeys[connection.peer] = data.key;
-              const formattedKey = new Uint8Array(await window.crypto.subtle.exportKey("spki", this.publicKey))
+              const formattedKey = new Uint8Array(await window.crypto.subtle.exportKey("spki", self.publicKey))
               this.knownPeers[connection.peer].send({
                 type: "ack",
                 key: formattedKey.join(','),
@@ -225,6 +228,7 @@
       } else {
         crypto.subtle.generateKey({name: 'RSA-OAEP', modulusLength: 4096, publicExponent: new Uint8Array([0x01, 0x00, 0x01]), hash: 'SHA-512'}, true, ["encrypt", "decrypt"])
         .then(keyPair => {
+          console.log(keyPair);
           manager = new KeyManager(keyPair);
           document
             .querySelector("#join-btn")
