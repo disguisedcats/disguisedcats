@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     STATIC_PATH: Path
 
     PEERJS_HOST: str = "/"
-    PEERJS_PORT: int = 80
+    PEERJS_PORT: int = 443
     PEERJS_PATH: str = "/peer"
 
     LOG_LEVEL: Literal["DEBUG", "INFO"] = "INFO"
