@@ -186,7 +186,7 @@
         }
 
         async save() {
-          const k = await window.crypto.subtle.exportKey("pcks8", k.privateKey);
+          const k = await window.crypto.subtle.exportKey("pcks8", this.privateKey);
           const p = (new Uint8Array(k)).join(',');
           window.localStorage.setItem(
             "keys",
