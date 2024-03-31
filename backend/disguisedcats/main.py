@@ -4,7 +4,7 @@ from uuid import UUID
 
 import svcs
 import nanoid
-from fastapi import FastAPI, Request, Response, Form, File, UploadFile
+from fastapi import FastAPI, Request, Response, Form, File, UploadFile, status
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from disguisedcats import db
 from disguisedcats import log
 from disguisedcats.log import logger
+from disguisedcats.posts import post_router
 from disguisedcats.settings import settings
 from disguisedcats.sessions import session
 
@@ -32,6 +33,8 @@ app.middleware("http")(log.middleware)
 app.mount("/static", StaticFiles(directory=settings.STATIC_PATH), name="static")
 templates = Jinja2Templates(directory="templates")
 
+app.include_router(post_router, prefix="/api")
+
 
 @app.get("/")
 async def index(request: Request, services: svcs.fastapi.DepContainer) -> Response:
@@ -47,7 +50,7 @@ async def index(request: Request, services: svcs.fastapi.DepContainer) -> Respon
         app_id, _, _ = hostname.split(".")
     except Exception:
         logger.debug("Invalid hostname: %s", request.base_url.hostname)
-        return Response(status_code=400)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
     _db = await services.aget(AsyncIOMotorClient)
     result = await _db.apps.find_one({"_id": app_id})
@@ -65,7 +68,7 @@ async def index(request: Request, services: svcs.fastapi.DepContainer) -> Respon
         )
 
     logger.debug("Invalid hostname: %s", request.base_url.hostname)
-    return Response(status_code=400)
+    return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
 
 def generate_app_id() -> str:
@@ -88,7 +91,7 @@ async def create_app(
     await _db.apps.insert_one({"_id": app_id, "name": name, "preset": preset})
 
     icon_extension = icon.filename.split(".")[-1]
-    icon_path = settings.STATIC_PATH / f"{app_id}.{icon_extension}"
+    icon_path = settings.STATIC_PATH / "icons" / f"{app_id}.{icon_extension}"
     with open(icon_path, "wb+") as f:
         shutil.copyfileobj(icon.file, f)
 
@@ -126,7 +129,7 @@ class GetSessionResponse(BaseModel):
 async def get_session(session_id: str) -> GetSessionResponse:
     peer_id = await session.get(session_id)
     if peer_id is None:
-        return Response(status_code=400)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
     return GetSessionResponse(peer_id=peer_id)
 
 
@@ -134,7 +137,7 @@ async def get_session(session_id: str) -> GetSessionResponse:
 async def health(services: svcs.fastapi.DepContainer) -> JSONResponse:
     ok: list[str] = []
     failing: list[dict[str, str]] = []
-    code = 200
+    code = status.HTTP_200_OK
 
     for svc in services.get_pings():
         try:
@@ -142,6 +145,6 @@ async def health(services: svcs.fastapi.DepContainer) -> JSONResponse:
             ok.append(svc.name)
         except Exception as e:
             failing.append({svc.name: repr(e)})
-            code = 500
+            code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
     return JSONResponse(content={"ok": ok, "failing": failing}, status_code=code)
