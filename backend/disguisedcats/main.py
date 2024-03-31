@@ -66,6 +66,7 @@ async def index(request: Request, services: svcs.fastapi.DepContainer) -> Respon
                 "peerjs_host": settings.PEERJS_HOST,
                 "peerjs_port": settings.PEERJS_PORT,
                 "peerjs_path": settings.PEERJS_PATH,
+                "peerjs_secure": True if settings.PEERJS_PORT == 443 else False,
             },
         )
 
