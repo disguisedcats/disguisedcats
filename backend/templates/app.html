@@ -101,7 +101,7 @@
     <script>
       window.addEventListener('DOMContentLoaded', () => {
         if (!window.matchMedia('(display-mode: standalone)').matches) {
-          document.querySelector("in-browser-notice").classList.toggle("hidden");
+          document.querySelector("#in-browser-notice").classList.toggle("hidden");
         }
       });
 
@@ -169,6 +169,7 @@
               this.knownKeys[connection.peer] = data.key;
             } else if (data.type === "save") {
               this.save();
+              this.reload();
             }
           });
         }
@@ -178,6 +179,7 @@
             peer.send({ type: "save" });
           });
           this.save();
+          this.reload();
         }
 
         save() {
@@ -192,13 +194,16 @@
           this.peer.destroy();
         }
 
+        reload() {
+          window.location.reload();
+        }
+
         static createPeer() {
           return new Peer({
             host: "{{ peerjs_host }}",
             port: {{ peerjs_port }},
             path: "{{ peerjs_path }}",
-            // TODO configure SSL in nginx
-            secure: false,
+            secure: true,
           });
         }
       }
