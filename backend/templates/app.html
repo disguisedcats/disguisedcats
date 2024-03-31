@@ -108,9 +108,10 @@
       class KeyManager {
         constructor(keyPair) {
           this.peer = KeyManager.createPeer();
+          console.log(keyPair)
           // TODO replace with public—private key generation
-          this.privateKey = keyPair.private;
-          this.publicKey = keyPair.public;
+          this.privateKey = keyPair.privateKey;
+          this.publicKey = keyPair.publicKey;
           this.knownPeers = {};
           this.knownKeys = [];
 
@@ -227,6 +228,7 @@
       } else {
         crypto.subtle.generateKey({name: 'RSA-OAEP', modulusLength: 4096, publicExponent: new Uint8Array([0x01, 0x00, 0x01]), hash: 'SHA-512'}, true, ["encrypt", "decrypt"])
         .then(keyPair => {
+          console.log(keyPair);
           manager = new KeyManager(keyPair);
           document
             .querySelector("#join-btn")
