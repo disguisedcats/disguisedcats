@@ -8,6 +8,9 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=verysecretadminpass
       - MONGO_INITDB_DATABASE=admin
+    env_file:
+      - path: override.env
+        required: false
     volumes:
       - mongodbdata:/data/db
     healthcheck:
@@ -32,6 +35,9 @@ services:
       - PORT=8000
       - STATIC_PATH=/var/static
       - DEBUG=True
+    env_file:
+      - path: override.env
+        required: false
     volumes:
       - appstatic:/var/static
     depends_on:
