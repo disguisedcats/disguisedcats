@@ -106,12 +106,13 @@
       });
 
       class KeyManager {
-        constructor() {
+        constructor(keyPair) {
           this.peer = KeyManager.createPeer();
           // TODO replace with public—private key generation
-          this.pubkey = `pubkey-${self.crypto.randomUUID()}`;
+          this.privateKey = keyPair.private;
+          this.publicKey = keyPair.public;
           this.knownPeers = {};
-          this.knownKeys = {};
+          this.knownKeys = [];
 
           this.peer.on("connection", (conn) => {
             if (conn.peer in this.knownPeers) {
@@ -119,11 +120,12 @@
             }
             this.configureConnection(conn);
 
-            conn.on("open", () => {
+            conn.on("open", async () => {
+              const publicKeyFormatted = new Uint8Array(await window.crypto.subtle.exportKey("spki", this.publicKey))
               this.knownPeers[conn.peer] = conn;
               conn.send({
                 type: "syn",
-                key: this.pubkey,
+                key: publicKeyFormatted.join(','),
                 knownPeers: Object.keys(this.knownPeers),
               });
             });
@@ -153,12 +155,13 @@
           });
           connection.on("close", () => this.removePeer(connection.peer));
           connection.on("error", () => this.removePeer(connection.peer));
-          connection.on("data", (data) => {
+          connection.on("data", async (data) => {
             if (data.type === "syn") {
               this.knownKeys[connection.peer] = data.key;
+              const formattedKey = new Uint8Array(await window.crypto.subtle.exportKey("spki", this.publicKey))
               this.knownPeers[connection.peer].send({
                 type: "ack",
-                key: this.pubkey,
+                key: formattedKey.join(','),
               });
               data.knownPeers.forEach((peerId) => {
                 if (!(peerId in this.knownKeys)) {
@@ -168,7 +171,7 @@
             } else if (data.type === "ack") {
               this.knownKeys[connection.peer] = data.key;
             } else if (data.type === "save") {
-              this.save();
+              await this.save();
               this.reload();
             }
           });
@@ -182,13 +185,15 @@
           this.reload();
         }
 
-        save() {
+        async save() {
+          const k = await window.crypto.subtle.exportKey("pcks8", k.privateKey);
+          const p = (new Uint8Array(k)).join(',');
           window.localStorage.setItem(
             "keys",
             JSON.stringify({
               id: this.peer.id,
               knownKeys: this.knownKeys,
-              pubkey: this.pubkey,
+              privateKey: p,
             })
           );
           this.peer.destroy();
@@ -218,15 +223,18 @@
           "keys"
         )}`;
       } else {
-        manager = new KeyManager();
-        document
-          .querySelector("#join-btn")
-          .addEventListener("click", async () => {
-            const sessionId = document.querySelector("#join-session-id").value;
-            const response = await fetch(`/session/${sessionId}`);
-            const data = await response.json();
-            manager.connect(data.peer_id);
-          });
+        crypto.subtle.generateKey({name: 'RSA-OAEP', modulusLength: 4096, publicExponent: new Uint8Array([0x01, 0x00, 0x01]), hash: 'SHA-512'}, true, ["encrypt", "decrypt"])
+        .then(keyPair => {
+          manager = new KeyManager(keyPair);
+          document
+            .querySelector("#join-btn")
+            .addEventListener("click", async () => {
+              const sessionId = document.querySelector("#join-session-id").value;
+              const response = await fetch(`/session/${sessionId}`);
+              const data = await response.json();
+              manager.connect(data.peer_id);
+            });
+        })
       }
     </script>
   </body>
