@@ -26,7 +26,7 @@ services:
       - DB_USER=disguisedcat
       - DB_PASSWORD=123456
       - HOSTNAME=example.localhost
-      - PORT=9999
+      - PORT=8000
       - STATIC_PATH=/var/static
       - DEBUG=True
     volumes:

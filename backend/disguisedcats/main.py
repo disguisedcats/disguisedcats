@@ -39,14 +39,20 @@ app.include_router(post_router, prefix="/api")
 @app.get("/")
 async def index(request: Request, services: svcs.fastapi.DepContainer) -> Response:
     """Index page of the service."""
-    hostname = request.headers.get("Host", request.base_url.hostname)
-    if (
-        hostname == settings.HOSTNAME
-        or hostname == f"{settings.HOSTNAME}:{settings.PORT}"
-    ):
+    hostname = request.base_url.hostname
+    if settings.PROXIED:
+        hostname = request.headers.get("Host", request.base_url.hostname)
+    canonical_hostname = (
+        settings.HOSTNAME
+        if settings.PROXIED
+        else f"{settings.HOSTNAME}:{settings.PORT}"
+    )
+
+    if hostname == canonical_hostname:
         return templates.TemplateResponse(request=request, name="index.html")
+
     try:
-        # TODO turn on only for debug-mode
+        # TODO use only in debug-mode
         app_id, _, _ = hostname.split(".")
     except Exception:
         logger.debug("Invalid hostname: %s", request.base_url.hostname)
@@ -71,6 +77,43 @@ async def index(request: Request, services: svcs.fastapi.DepContainer) -> Respon
     return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
 
+@app.get("/app.webmanifest")
+async def generate_manifest(
+    request: Request, services: svcs.fastapi.DepContainer
+) -> Response:
+    hostname = request.base_url.hostname
+    if settings.PROXIED:
+        hostname = request.headers.get("Host", request.base_url.hostname)
+
+    if len(hostname.split(".")) != 3:
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+
+    if not (app_id := request.headers.get("X-App-Id")):
+        # TODO use only in debug-mode
+        app_id = hostname.split(".")[0]
+
+    _db = await services.aget(AsyncIOMotorClient)
+    app = await _db.apps.find_one({"_id": app_id})
+    response = {
+        "name": app["name"],
+        "short_name": app["name"],
+        "description": "Cats app. That's it",
+        "icons": [
+            {
+                "src": f"/static/{app['icon']}",
+                # TODO add sizes restrictions and generation
+                "sizes": "32x32",
+                # TODO add icon type inference
+                "type": "image/jpeg",
+            }
+        ],
+        "display": "standalone",
+        "theme_color": "#000000",
+        "background_color": "#ffffff",
+    }
+    return JSONResponse(response)
+
+
 def generate_app_id() -> str:
     return nanoid.generate("0123456789abcdefghijklmnopqrstuvwxyz", 10)
 
@@ -85,15 +128,25 @@ async def create_app(
 ) -> Response:
     """Create new app from the form."""
     app_id = generate_app_id()
-    new_url = f"https://{app_id}.{settings.HOSTNAME}:{settings.PORT}"
-
-    _db = await services.aget(AsyncIOMotorClient)
-    await _db.apps.insert_one({"_id": app_id, "name": name, "preset": preset})
+    new_url = f"https://{app_id}.{settings.HOSTNAME}"
+    if not settings.PROXIED:
+        new_url = f"{new_url}:{settings.PORT}"
 
     icon_extension = icon.filename.split(".")[-1]
-    icon_path = settings.STATIC_PATH / "icons" / f"{app_id}.{icon_extension}"
-    with open(icon_path, "wb+") as f:
+    icon_path = f"icons/{app_id}.{icon_extension}"
+    icon_full_path = settings.STATIC_PATH / "icons" / f"{app_id}.{icon_extension}"
+    with open(icon_full_path, "wb+") as f:
         shutil.copyfileobj(icon.file, f)
+
+    _db = await services.aget(AsyncIOMotorClient)
+    await _db.apps.insert_one(
+        {
+            "_id": app_id,
+            "name": name,
+            "preset": preset,
+            "icon": icon_path,
+        }
+    )
 
     return templates.TemplateResponse(
         request=request, name="partials/new_app_url.html", context={"new_url": new_url}

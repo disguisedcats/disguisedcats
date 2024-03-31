@@ -8,6 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     HOSTNAME: str
     PORT: int = 8000
+    PROXIED: bool = True
 
     DB_URL: str
     DB_NAME: str
