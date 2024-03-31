@@ -211,7 +211,7 @@
             host: "{{ peerjs_host }}",
             port: {{ peerjs_port }},
             path: "{{ peerjs_path }}",
-            secure: true,
+            secure: {{ peerjs_secure | lower }},
           });
         }
       }
