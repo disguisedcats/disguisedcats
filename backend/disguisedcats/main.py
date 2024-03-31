@@ -42,11 +42,7 @@ async def index(request: Request, services: svcs.fastapi.DepContainer) -> Respon
     hostname = request.base_url.hostname
     if settings.PROXIED:
         hostname = request.headers.get("Host", request.base_url.hostname)
-    canonical_hostname = (
-        settings.HOSTNAME
-        if settings.PROXIED
-        else f"{settings.HOSTNAME}:{settings.PORT}"
-    )
+    canonical_hostname = settings.HOSTNAME
 
     if hostname == canonical_hostname:
         return templates.TemplateResponse(request=request, name="index.html")
@@ -105,8 +101,23 @@ async def generate_manifest(
                 "sizes": "32x32",
                 # TODO add icon type inference
                 "type": "image/jpeg",
-            }
+            },
+            {
+                "src": f"/static/{app['icon']}",
+                # TODO add sizes restrictions and generation
+                "sizes": "192x192",
+                # TODO add icon type inference
+                "type": "image/jpeg",
+            },
+            {
+                "src": f"/static/{app['icon']}",
+                # TODO add sizes restrictions and generation
+                "sizes": "512x512",
+                # TODO add icon type inference
+                "type": "image/jpeg",
+            },
         ],
+        "start_url": f"{request.base_url.scheme}://{hostname}/",
         "display": "standalone",
         "theme_color": "#000000",
         "background_color": "#ffffff",
