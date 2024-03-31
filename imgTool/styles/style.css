@@ -1,0 +1,72 @@
+#text {
+  max-width: 100%;
+  min-width: 100%;
+  min-height: 28px;
+  height: 28px;
+}
+
+.main {
+  align-items: flex-start;
+}
+
+.nav__item-active {
+  border-bottom: 2px solid black;
+  cursor: default;
+}
+
+.btn {
+  cursor: pointer;
+}
+
+.btns {
+  width: 100%;
+  text-align: center;
+  margin: 40px 0 25px;
+}
+
+.btn {
+  border: 1px solid black;
+  border-radius: 3px;
+  padding: 5px 12px;
+  transition: 0.15s;
+}
+.btn:hover {
+  background: #e4e4e4;
+}
+
+.half {
+  width: 45%;
+  text-align: center;
+  margin-top: 20px;
+}
+
+#img {
+  margin: 0 auto;
+}
+
+#cover {
+  margin: 0 auto;
+}
+
+body {
+  padding-bottom: 25px;
+}
+
+#download {
+  display: inline-block;
+  margin-top: 10px;
+  color: #000;
+  text-decoration: none;
+  background: none;
+}
+#download:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+#download:hover {
+  background: #e4e4e4;
+}
+
+#message {
+  max-width: 100%;
+}/*# sourceMappingURL=style.css.map */

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="description" content="Image Cipher">
+   <title>Image Cipher</title>
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Inter&family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+   <link href="styles/main.9f6aeded.css" rel="stylesheet">
+   <link rel="stylesheet" href="styles/style.css">
+  </head>
+  <body class="body">
+   <div class="container">
+      <header class="header">
+         <h3 class="header__subtitle">йоу, 😼</h3>
+         <h1 class="header__title">Здесь ты можешь работать с картинками!</h1>
+      </header>
+      <nav class="nav">
+         <ul class="nav__list">
+            <li class="nav__item nav__item-active">Зашифровать</li>
+            <li class="nav__item">Расшифровать</li>
+         </ul>
+      </nav>
+   </div>
+   <div class="main" id="main">
+      <div class="main__block">
+         <h3 class="main__title">Изображение:</h3>
+         <input id="file" type="file"/><br/>
+      </div>
+      <div class="main__block main__textBlock">
+         <h3 class="main__title">Текст: <span id="capacity"></span></h3>
+         <textarea id="text">Пример текста</textarea>
+      </div>
+      <div class="main__block main__keyBlock">
+         <h3 class="main__title">Приватный ключ:</h3>
+         <input id="privateKey" type="text" disabled/><br/>
+      </div>
+      <div class="main__block btns">
+         <span id="hide" class="btn">Зашифровать</span>
+         <span id="read" class="btn">Расшифровать</span>
+      </div>
+      <div id="original" class="main__block root__img half">
+         <h3 class="main__title">Исходное изображение:</h3>
+         <img id="img" src="assets/kitten.png"/>
+      </div>
+      <div id="stego" class="main__block crypt__img half">
+         <h3 class="main__title">Изображение с сообщением:</h3>
+         <img id="cover" src=""/>
+         <a id="download" class="btn small" download="cover.png" rel="nofollow"><strong>Скачать</strong></a>
+      </div>
+      </div>
+      <div id="messageArea" class="main__block invisible">
+         <h3 class="main__title">Сообщение:</h3>
+         <div id="message"></div>
+      </div>
+   </div>
+   <script type="text/javascript" src="libs/steganography.min.js"></script>
+   <script type="module" src="js/index.js"></script>
+   <script type="module" src="js/crypting.js"></script>
+</body>
+</html>
