@@ -28,3 +28,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+settings.STATIC_PATH.mkdir(parents=True, exist_ok=True)
+(settings.STATIC_PATH / "icons").mkdir(exist_ok=True)
+(settings.STATIC_PATH / "imgs").mkdir(exist_ok=True)
