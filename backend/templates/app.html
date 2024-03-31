@@ -119,9 +119,10 @@
               return;
             }
             this.configureConnection(conn);
+            var self = this;
 
             conn.on("open", async () => {
-              const publicKeyFormatted = new Uint8Array(await window.crypto.subtle.exportKey("spki", this.publicKey))
+              const publicKeyFormatted = new Uint8Array(await window.crypto.subtle.exportKey("spki", self.publicKey))
               this.knownPeers[conn.peer] = conn;
               conn.send({
                 type: "syn",
@@ -146,6 +147,7 @@
         }
 
         configureConnection(connection) {
+          var self = this;
           connection.on("open", () => {
             this.knownPeers[connection.peer] = connection;
             const messagesRoot = document.querySelector("#join-messages");
@@ -158,7 +160,7 @@
           connection.on("data", async (data) => {
             if (data.type === "syn") {
               this.knownKeys[connection.peer] = data.key;
-              const formattedKey = new Uint8Array(await window.crypto.subtle.exportKey("spki", this.publicKey))
+              const formattedKey = new Uint8Array(await window.crypto.subtle.exportKey("spki", self.publicKey))
               this.knownPeers[connection.peer].send({
                 type: "ack",
                 key: formattedKey.join(','),
